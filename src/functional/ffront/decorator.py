@@ -26,7 +26,7 @@ import functools
 import types
 import typing
 import warnings
-from typing import Callable, Iterable, Protocol
+from typing import Callable, Final, Iterable, Protocol
 
 from devtools import debug
 
@@ -57,7 +57,7 @@ from functional.iterator.processor_interface import (
 )
 
 
-DEFAULT_BACKEND: Callable = roundtrip.executor
+DEFAULT_BACKEND: Final = roundtrip.executor
 
 
 def _collect_capture_vars(captured_vars: CapturedVars) -> CapturedVars:

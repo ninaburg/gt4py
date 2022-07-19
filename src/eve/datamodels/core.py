@@ -186,7 +186,7 @@ class ForwardRefValidator:
     def __call__(self, instance: DataModel, attribute: attr.Attribute, value: Any) -> None:
         if self.validator is NOTHING:
             model_cls = instance.__class__
-            update_forward_refs(model_cls)  # type: ignore[type-var]  # model_cls is an actual type
+            update_forward_refs(model_cls)
             self.validator = self.factory(
                 getattr(getattr(model_cls, MODEL_FIELD_DEFINITIONS_ATTR), attribute.name).type,
                 attribute.name,
@@ -215,10 +215,7 @@ def field_type_validator_factory(
 ) -> FieldTypeValidatorFactory:
     """Create a factory of field type validators from a factory of regular type validators."""
     if use_cache:
-        factory = cast(
-            type_val.TypeValidatorFactory,
-            utils.optional_lru_cache(func=factory),  # type: ignore[arg-type]  # factory is not detected as callable
-        )
+        factory = cast(type_val.TypeValidatorFactory, utils.optional_lru_cache(func=factory))
 
     def _field_type_validator_factory(
         type_annotation: TypeAnnotation,
@@ -466,9 +463,7 @@ else:
             **kwargs: Any,
         ) -> None:
             dm_opts = kwargs.pop(_DM_OPTS, [])
-            super(DataModel, cls).__init_subclass__(
-                **kwargs
-            )  # type: ignore[call-arg]  # is not guaranteed that superclass does not accept kwargs
+            super(DataModel, cls).__init_subclass__(**kwargs)
             cls_params = getattr(cls, MODEL_PARAM_DEFINITIONS_ATTR, None)
 
             generic: Final = (
@@ -503,7 +498,7 @@ else:
                 cls,
                 slots=False,
                 generic=generic,
-                **datamodel_kwargs,  # type: ignore[arg-type]  # passing actual arguments in the dict
+                **datamodel_kwargs,
                 _stacklevel_offset=1,
             )
 
@@ -582,7 +577,7 @@ def field(
     else:
         defaults_kwargs = {}
 
-    return attrs.field(  # type: ignore[call-overload]  # attrs lies in some typings
+    return attrs.field(
         **defaults_kwargs,
         init=init,
         repr=repr,
@@ -915,7 +910,7 @@ def _make_counting_attr_from_attribute(
     if include_type:
         args.append("type")
 
-    result = attr.ib(**{key: getattr(field_attrib, key) for key in args}, **kwargs)  # type: ignore[call-overload]  # too hard for mypy
+    result = attr.ib(**{key: getattr(field_attrib, key) for key in args}, **kwargs)
     for key in ("eq_key", "order_key"):
         object.__setattr__(result, key, getattr(field_attrib, key))
 
@@ -1284,11 +1279,7 @@ def _make_datamodel(  # noqa: C901  # too complex but still readable and documen
     setattr(
         new_cls,
         MODEL_FIELD_DEFINITIONS_ATTR,
-        utils.FrozenNamespace(
-            **{
-                f_attr.name: f_attr for f_attr in new_cls.__attrs_attrs__  # type: ignore[attr-defined]  # new_cls.__attrs_attrs__ is valid
-            }
-        ),
+        utils.FrozenNamespace(**{f_attr.name: f_attr for f_attr in new_cls.__attrs_attrs__}),
     )
     new_cls.update_forward_refs = classmethod(update_forward_refs)
 

@@ -182,7 +182,7 @@ def format_source(language: str, source: str, *, skip_errors: bool = True, **kwa
     formatter = SOURCE_FORMATTERS.get(language, None)
     try:
         if formatter:
-            return formatter(source, **kwargs)  # type: ignore # Callable does not support **kwargs
+            return formatter(source, **kwargs)
         else:
             raise FormattingError(f"Missing formatter for '{language}' language")
     except Exception as e:
@@ -618,7 +618,7 @@ class TemplatedGenerator(NodeVisitor):
 
     @classmethod
     def __init_subclass__(cls, *, inherit_templates: bool = True, **kwargs: Any) -> None:
-        super().__init_subclass__(**kwargs)  # type: ignore  # mypy issues 4335, 4660
+        super().__init_subclass__(**kwargs)
         if "__templates__" in cls.__dict__:
             raise TypeError(f"Invalid '__templates__' member in class {cls}")
 
