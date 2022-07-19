@@ -5,7 +5,6 @@ from typing import Iterable
 
 from eve import codegen
 from eve.codegen import FormatTemplate as as_fmt, MakoTemplate as as_mako
-from eve.concepts import Node
 from functional import iterator
 from functional.iterator.ir import AxisLiteral, FencilDefinition, OffsetLiteral
 from functional.iterator.processor_interface import fencil_executor
@@ -77,7 +76,7 @@ _BACKEND_NAME = "roundtrip"
 
 
 @fencil_executor
-def executor(ir: Node, *args, **kwargs):
+def executor(fencil_def: iterator.ir.FencilDefinition, *args, **kwargs) -> None:
     debug = "debug" in kwargs and kwargs["debug"] is True
     use_tmps = "use_tmps" in kwargs and kwargs["use_tmps"] is True
 
@@ -86,21 +85,24 @@ def executor(ir: Node, *args, **kwargs):
     def register_tmp(tmp, domain):
         tmps[tmp] = domain
 
-    ir = apply_common_transforms(
-        ir, use_tmps=use_tmps, offset_provider=kwargs["offset_provider"], register_tmp=register_tmp
+    fencil_def = apply_common_transforms(
+        fencil_def,
+        use_tmps=use_tmps,
+        offset_provider=kwargs["offset_provider"],
+        register_tmp=register_tmp,
     )
 
-    program = EmbeddedDSL.apply(ir)
-    wrapper = WrapperGenerator.apply(ir, tmps=tmps)
+    program = EmbeddedDSL.apply(fencil_def)
+    wrapper = WrapperGenerator.apply(fencil_def, tmps=tmps)
     offset_literals: Iterable[str] = (
-        ir.pre_walk_values()
+        fencil_def.pre_walk_values()
         .if_isinstance(OffsetLiteral)
         .getattr("value")
         .if_isinstance(str)
         .to_set()
     )
     axis_literals: Iterable[str] = (
-        ir.pre_walk_values().if_isinstance(AxisLiteral).getattr("value").to_set()
+        fencil_def.pre_walk_values().if_isinstance(AxisLiteral).getattr("value").to_set()
     )
 
     header = """
@@ -132,8 +134,8 @@ from functional.iterator.embedded import np_as_located_field
         if not debug:
             pathlib.Path(source_file_name).unlink(missing_ok=True)
 
-    assert isinstance(ir, FencilDefinition)
-    fencil_name = ir.id
+    assert isinstance(fencil_def, FencilDefinition)
+    fencil_name = fencil_def.id
     fencil = getattr(foo, fencil_name + "_wrapper")
     assert "offset_provider" in kwargs
 

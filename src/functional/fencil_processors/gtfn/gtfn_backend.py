@@ -66,5 +66,5 @@ def _guess_grid_type(**kwargs):
 
 
 @fencil_formatter
-def format_sourcecode(fencil: itir.FencilDefinition, *arg, **kwargs) -> str:
-    return generate(fencil, grid_type=_guess_grid_type(**kwargs), **kwargs)
+def format_sourcecode(fencil_def: itir.FencilDefinition, *arg: Any, **kwargs: Any) -> str:
+    return generate(fencil_def, grid_type=_guess_grid_type(**kwargs), **kwargs)

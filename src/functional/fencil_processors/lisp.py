@@ -57,5 +57,5 @@ class ToLispLike(TemplatedGenerator):
 
 
 @fencil_formatter
-def format_lisp(fencil: itir.FunctionDefinition, *args, **kwargs) -> str:
-    return ToLispLike.apply(fencil, **kwargs)
+def format_lisp(fencil_def: itir.FencilDefinition, *args: Any, **kwargs: Any) -> str:
+    return ToLispLike.apply(fencil_def, **kwargs)
