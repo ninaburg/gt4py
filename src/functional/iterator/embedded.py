@@ -48,7 +48,7 @@ FieldAxis: TypeAlias = (
 TupleAxis: TypeAlias = NoneType
 Axis: TypeAlias = FieldAxis | TupleAxis
 
-Column: TypeAlias = np.ndarray  # TODO consider replacing by a wrapper around ndarray
+Column: TypeAlias = npt.NDArray  # TODO consider replacing by a wrapper around ndarray
 
 
 class SparseTag(Tag):
@@ -138,12 +138,12 @@ class MutableLocatedField(LocatedField, Protocol):
         ...
 
     @abstractmethod
-    def __array__(self) -> np.ndarray:
+    def __array__(self) -> npt.NDArray:
         ...
 
 
 def _is_column(v: Any) -> TypeGuard[Column]:
-    return isinstance(v, np.ndarray)
+    return isinstance(v, npt.NDArray)
 
 
 @builtins.deref.register(EMBEDDED)
@@ -354,7 +354,7 @@ def execute_shift(
             if p is None:
                 new_entry[i] = index
                 break
-        return pos | {tag: new_entry}  # type: ignore [dict-item] # mypy is confused
+        return pos | {tag: new_entry}
 
     assert tag in offset_provider
     offset_implementation = offset_provider[tag]
@@ -625,7 +625,7 @@ class LocatedFieldImpl(MutableLocatedField):
     def __setitem__(self, indices: FieldIndexOrIndices, value: Any):
         self.setter(indices, value)
 
-    def __array__(self) -> np.ndarray:
+    def __array__(self) -> npt.NDArray:
         return self.array()
 
     @property
@@ -653,7 +653,7 @@ def get_ordered_indices(
             res.append(slice(None))
         else:
             assert _is_field_axis(axis)
-            assert axis.value in pos
+            assert isinstance(axis.value, Tag) and axis.value in pos
             elem = pos[axis.value]
             if isinstance(elem, list):
                 res.append(elem.pop(0))  # we consume a sparse entry, this smells...
@@ -690,8 +690,8 @@ def _tupsum(a, b):
 
 def np_as_located_field(
     *axes: Dimension, origin: Optional[dict[Dimension, int]] = None
-) -> Callable[[np.ndarray], LocatedFieldImpl]:
-    def _maker(a: np.ndarray) -> LocatedFieldImpl:
+) -> Callable[[npt.NDArray], LocatedFieldImpl]:
+    def _maker(a: npt.NDArray) -> LocatedFieldImpl:
         if a.ndim != len(axes):
             raise TypeError("ndarray.ndim incompatible with number of given axes")
 
@@ -718,8 +718,11 @@ class IndexField(LocatedField):
         self.dtype = np.dtype(dtype).type
 
     def __getitem__(self, index: FieldIndexOrIndices) -> Any:
-        assert isinstance(index, int) or (isinstance(index, tuple) and len(index) == 1)
-        return self.dtype(index if isinstance(index, int) else index[0])
+        if isinstance(index, int):
+            return self.dtype(index)
+        else:
+            assert isinstance(index, tuple) and len(index) == 1 and isinstance(index[0], int)
+            return self.dtype(index[0])
 
     @property
     def axes(self) -> tuple[Dimension]:
@@ -916,7 +919,7 @@ def scan(scan_pass, is_forward: bool, init):
         dtype, shape = _column_dtype_and_shape(levels, init)
 
         state = init
-        col = np.zeros(shape, dtype=dtype)
+        col: npt.NDArray = np.zeros(shape, dtype=dtype)
         for i in column_range:
             state = scan_pass(state, *map(shifted_scan_arg(i), iters))
             if __debug__:
