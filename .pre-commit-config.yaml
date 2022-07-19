@@ -5,18 +5,19 @@ repos:
   #   hooks:
   #   - id: check-hooks-apply
   #   - id: check-useless-excludes
+  #   - id: identity
 
 - repo: https://github.com/pre-commit/pre-commit-hooks
   rev: v4.1.0
   hooks:
   - id: check-case-conflict
-      #  - id: check-json
+  # - id: check-json
   - id: check-merge-conflict
   - id: check-toml
   - id: check-yaml
   - id: debug-statements
-    # - id: fix-encoding-pragma
-    #   args: [--remove]
+  # - id: fix-encoding-pragma
+  #   args: [--remove]
   #  - id: pretty-format-json
 
 - repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
@@ -52,8 +53,8 @@ repos:
     - flake8-docstrings
     - flake8-eradicate
     - flake8-mutable
-          # Disabled for now due to random false positives
-          # - flake8-rst-docstrings
+    # Disabled for now due to random false positives
+    # - flake8-rst-docstrings
     - pygments
     exclude: |
       (?x)^(
@@ -63,22 +64,43 @@ repos:
       tests/functional_tests/.* |
       )$
 
-- repo: https://github.com/pre-commit/mirrors-mypy
-  rev: v0.942
+- repo: local
   hooks:
   - id: mypy
-    additional_dependencies:
-    - types-attrs
-    - types-frozendict
+    name: mypy
+    stages: [commit]
+    language: system
+    entry: mypy
+    types: [python]
+    require_serial: true
     exclude: |
       (?x)^(
-      src/functional/ffront/func_to_past.py | # until mypy supports match
-      src/functional/ffront/past_to_itir.py | # until mypy supports match
-      src/functional/ffront/symbol_makers.py | # until mypy supports match
-      src/functional/ffront/foast_to_itir.py | # until mypy supports match
-      src/functional/ffront/past_passes/type_deduction.py | # until mypy supports match
-      docs/eve/conf.py |
-      tests/eve_tests/definitions.py |
-      tests/functional_tests/ffront_tests/.* |
-      tests/functional_tests/cpp_backend_tests/.* |
+      build/.* |
+      docs/.* |
+      setup\.py$ |
+      tests/.* |
       )$
+
+  # - repo: https://github.com/pre-commit/mirrors-mypy
+  #   rev: v0.961
+  #   hooks:
+  #     - id: mypy
+  #       args: [--install-types, --non-interactive]
+  #       exclude: |
+  #         (?x)^(
+  #         build/.* |
+  #         docs/.* |
+  #         setup\.py$ |
+  #         tests/.* |
+  #         )$
+
+# - repo: meta
+#   hooks:
+#   - id: identity
+#     exclude: |
+#       (?x)^(
+#       build/.* |
+#       docs/.* |
+#       setup\.py$ |
+#       tests/.* |
+#       )$
