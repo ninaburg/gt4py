@@ -1,7 +1,7 @@
 import importlib.util
 import pathlib
 import tempfile
-from typing import Iterable
+from typing import Any, Iterable
 
 from eve import codegen
 from eve.codegen import FormatTemplate as as_fmt, MakoTemplate as as_mako
@@ -76,7 +76,7 @@ _BACKEND_NAME = "roundtrip"
 
 
 @fencil_executor
-def executor(fencil_def: iterator.ir.FencilDefinition, *args, **kwargs) -> None:
+def executor(fencil_def: iterator.ir.FencilDefinition, *args: Any, **kwargs: Any) -> None:
     debug = "debug" in kwargs and kwargs["debug"] is True
     use_tmps = "use_tmps" in kwargs and kwargs["use_tmps"] is True
 

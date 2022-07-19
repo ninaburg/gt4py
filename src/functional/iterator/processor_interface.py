@@ -22,18 +22,18 @@ For more information refer to ``gt4py/docs/functional/architecture/007-Fencil-Pr
 """
 from dataclasses import dataclass
 from functools import update_wrapper
-from typing import Protocol
+from typing import Any, Protocol
 
 from functional.iterator import ir as itir
 
 
 class FencilFormatterFunction(Protocol):
-    def __call__(self, fencil: itir.FencilDefinition, *args, **kwargs) -> str:
+    def __call__(self, fencil_def: itir.FencilDefinition, *args: Any, **kwargs: Any) -> str:
         ...
 
 
 class FencilExecutorFunction(Protocol):
-    def __call__(self, fencil: itir.FencilDefinition, *args, **kwargs) -> None:
+    def __call__(self, fencil_def: itir.FencilDefinition, *args: Any, **kwargs: Any) -> None:
         ...
 
 
