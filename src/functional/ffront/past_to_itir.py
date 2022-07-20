@@ -11,6 +11,11 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+
+from __future__ import annotations
+
+from typing import Any, TypeGuard
+
 from eve import NodeTranslator, traits
 from functional.common import DimensionKind, GridType, GTTypeError
 from functional.ffront import common_types, program_ast as past
@@ -19,6 +24,10 @@ from functional.iterator import ir as itir
 
 def _size_arg_from_field(field_name: str, dim: int) -> str:
     return f"__{field_name}_size_{dim}"
+
+
+def _is_list_of_slices(instance: Any) -> TypeGuard[list[past.Slice]]:
+    return isinstance(instance, list) and all(isinstance(el, past.Slice) for el in instance)
 
 
 class ProgramLowering(traits.VisitorWithSymbolTableTrait, NodeTranslator):
@@ -144,16 +153,15 @@ class ProgramLowering(traits.VisitorWithSymbolTableTrait, NodeTranslator):
         #  inspection of the PAST to emulate the behaviour
         if isinstance(node, past.Subscript):
             out_field_name: past.Name = node.value
-            if isinstance(node.slice_, past.TupleExpr) and all(
-                isinstance(el, past.Slice) for el in node.slice_.elts
-            ):
-                out_field_slice_: list[past.Slice] = node.slice_.elts
+            if isinstance(node.slice_, past.TupleExpr) and _is_list_of_slices(node.slice_.elts):
+                out_field_slice_ = node.slice_.elts
             elif isinstance(node.slice_, past.Slice):
-                out_field_slice_: list[past.Slice] = [node.slice_]
+                out_field_slice_ = [node.slice_]
             else:
                 raise RuntimeError(
                     "Unexpected `out` argument. Must be tuple of slices or slice expression."
                 )
+            assert isinstance(node.type, past.FieldSymbol)
             if len(out_field_slice_) != len(node.type.dims):
                 raise GTTypeError(
                     f"Too many indices for field {out_field_name}: field is {len(node.type.dims)}"
@@ -178,6 +186,7 @@ class ProgramLowering(traits.VisitorWithSymbolTableTrait, NodeTranslator):
                 )
 
         elif isinstance(node, past.Name):
+            assert isinstance(node.type, past.FieldSymbol)
             out_field_name = node
             domain_args = [
                 itir.FunCall(
