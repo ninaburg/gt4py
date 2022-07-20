@@ -79,7 +79,7 @@ def is_field(expr: foast.Expr) -> bool:
     return type_info.type_class(expr.type) is ct.FieldType
 
 
-def to_value(node: foast.LocatedNode) -> Callable[[itir.Expr], itir.Expr]:
+def to_value(node: foast.Symbol) -> Callable[[itir.Expr], itir.Expr]:
     """
     Either ``deref_`` or noop callable depending on the input node.
 
