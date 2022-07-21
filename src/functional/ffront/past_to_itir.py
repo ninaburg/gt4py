@@ -161,7 +161,7 @@ class ProgramLowering(traits.VisitorWithSymbolTableTrait, NodeTranslator):
                 raise RuntimeError(
                     "Unexpected `out` argument. Must be tuple of slices or slice expression."
                 )
-            assert isinstance(node.type, past.FieldSymbol)
+            #assert isinstance(node.type, past.FieldSymbol)
             if len(out_field_slice_) != len(node.type.dims):
                 raise GTTypeError(
                     f"Too many indices for field {out_field_name}: field is {len(node.type.dims)}"
