@@ -143,7 +143,7 @@ class MutableLocatedField(LocatedField, Protocol):
 
 
 def _is_column(v: Any) -> TypeGuard[Column]:
-    return isinstance(v, npt.NDArray)
+    return isinstance(v, np.ndarray)
 
 
 @builtins.deref.register(EMBEDDED)

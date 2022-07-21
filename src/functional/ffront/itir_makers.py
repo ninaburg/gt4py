@@ -12,6 +12,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from collections.abc import Callable
 from typing import Union
 
 from functional.iterator import ir as itir
@@ -100,10 +101,10 @@ class lambda__:
     Lambda(params=[Sym(id=SymbolName('a'))], expr=FunCall(fun=SymRef(id=SymbolRef('deref')), args=[SymRef(id=SymbolRef('a'))]))
     """
 
-    def __init__(self, *args):
+    def __init__(self, *args) -> None:
         self.args = args
 
-    def __call__(self, expr):
+    def __call__(self, expr: Union[str, int, itir.Expr]) -> itir.Lambda:
         return itir.Lambda(params=[sym(arg) for arg in self.args], expr=ensure_expr(expr))
 
 
@@ -117,79 +118,79 @@ class call_:
     FunCall(fun=SymRef(id=SymbolRef('plus')), args=[Literal(value='1', type='int'), Literal(value='1', type='int')])
     """
 
-    def __init__(self, expr):
+    def __init__(self, expr: itir.Expr) -> None:
         self.fun = ensure_expr(expr)
 
-    def __call__(self, *exprs):
+    def __call__(self, *exprs: itir.Expr) -> itir.FunCall:
         return itir.FunCall(fun=self.fun, args=[ensure_expr(expr) for expr in exprs])
 
 
-def deref_(expr):
+def deref_(expr: itir.Expr) -> itir.FunCall:
     """Create a deref FunCall, shorthand for ``call("deref")(expr)``."""
     return call_("deref")(expr)
 
 
-def plus_(left, right):
+def plus_(left, right) -> itir.FunCall:
     """Create a plus FunCall, shorthand for ``call("plus")(left, right)``."""
     return call_("plus")(left, right)
 
 
-def minus_(left, right):
+def minus_(left, right) -> itir.FunCall:
     """Create a minus FunCall, shorthand for ``call("minus")(left, right)``."""
     return call_("minus")(left, right)
 
 
-def multiplies_(left, right):
+def multiplies_(left, right) -> itir.FunCall:
     """Create a multiplies FunCall, shorthand for ``call("multiplies")(left, right)``."""
     return call_("multiplies")(left, right)
 
 
-def divides_(left, right):
+def divides_(left, right) -> itir.FunCall:
     """Create a divides FunCall, shorthand for ``call("divides")(left, right)``."""
     return call_("divides")(left, right)
 
 
-def and__(left, right):
+def and__(left, right) -> itir.FunCall:
     """Create an and_ FunCall, shorthand for ``call("and_")(left, right)``."""
     return call_("and_")(left, right)
 
 
-def or__(left, right):
+def or__(left, right) -> itir.FunCall:
     """Create an or_ FunCall, shorthand for ``call("or_")(left, right)``."""
     return call_("or_")(left, right)
 
 
-def greater_(left, right):
+def greater_(left, right) -> itir.FunCall:
     """Create a greater FunCall, shorthand for ``call("greater")(left, right)``."""
     return call_("greater")(left, right)
 
 
-def less_(left, right):
+def less_(left, right) -> itir.FunCall:
     """Create a less FunCall, shorthand for ``call("less")(left, right)``."""
     return call_("less")(left, right)
 
 
-def eq_(left, right):
+def eq_(left, right) -> itir.FunCall:
     """Create a eq FunCall, shorthand for ``call("eq")(left, right)``."""
     return call_("eq")(left, right)
 
 
-def not__(expr):
+def not__(expr) -> itir.FunCall:
     """Create a not_ FunCall, shorthand for ``call("not_")(expr)``."""
     return call_("not_")(expr)
 
 
-def make_tuple_(*args):
+def make_tuple_(*args) -> itir.FunCall:
     """Create a make_tuple FunCall, shorthand for ``call("make_tuple")(*args)``."""
     return call_("make_tuple")(*args)
 
 
-def tuple_get_(tuple_expr, index):
+def tuple_get_(tuple_expr, index) -> itir.FunCall:
     """Create a tuple_get FunCall, shorthand for ``call("tuple_get")(tuple_expr, index)``."""
     return call_("tuple_get")(tuple_expr, index)
 
 
-def lift_(expr):
+def lift_(expr) -> Callable[[itir.Expr], itir.FunCall]:
     """Create a lift FunCall, shorthand for ``call(call("lift")(expr))``."""
     return call_(call_("lift")(expr))
 
@@ -208,11 +209,11 @@ class let:
         self.var = var
         self.init_form = init_form
 
-    def __call__(self, form):
+    def __call__(self, form) -> itir.FunCall:
         return call_(lambda__(self.var)(form))(self.init_form)
 
 
-def shift_(offset, value=None):
+def shift_(offset, value=None) -> Callable[..., itir.FunCall]:
     """
     Create a shift call.
 
@@ -232,5 +233,5 @@ def shift_(offset, value=None):
     return call_(call_("shift")(*args))
 
 
-def literal_(value: str, typename: str):
+def literal_(value: str, typename: str) -> itir.Literal:
     return itir.Literal(value=value, type=typename)

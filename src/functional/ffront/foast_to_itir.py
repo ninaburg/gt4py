@@ -52,6 +52,9 @@ def resulting_type_kind(symbol_type: ct.SymbolType) -> TypeKind:
     >>> resulting_type_kind(ct.ScalarType(kind=ct.ScalarKind.BOOL)).name
     'SCALAR'
 
+    >>> resulting_type_kind(ct.FieldType(dims=..., dtype=ct.ScalarType(kind=ct.ScalarKind.FLOAT64))).name
+    'FIELD'
+
     >>> resulting_type_kind(ct.TupleType(types=[ct.ScalarType(kind=ct.ScalarKind.FLOAT64)])).name
     'SCALAR'
     """
@@ -71,7 +74,7 @@ def resulting_type_kind(symbol_type: ct.SymbolType) -> TypeKind:
     return TypeKind.UNKNOWN
 
 
-def can_be_value_or_iterator(symbol_type: ct.SymbolType):
+def can_be_value_or_iterator(symbol_type: ct.SymbolType) -> bool:
     return resulting_type_kind(symbol_type) is not TypeKind.UNKNOWN
 
 
@@ -154,8 +157,9 @@ class FieldOperatorLowering(NodeTranslator):
 
     def _visit_body(
         self, body: list[foast.Stmt], params: Optional[list[itir.Sym]] = None, **kwargs
-    ) -> itir.FunCall:
+    ) -> itir.Expr:
         *assigns, return_stmt = body
+        return_stmt = cast(foast.Return, return_stmt)
         current_expr = self.visit(return_stmt, **kwargs)
 
         for assign in reversed(assigns):
@@ -191,7 +195,7 @@ class FieldOperatorLowering(NodeTranslator):
     def visit_TupleExpr(self, node: foast.TupleExpr, **kwargs) -> itir.FunCall:
         return im.make_tuple_(*self.visit(node.elts, **kwargs))
 
-    def _lift_if_field(self, node: foast.LocatedNode) -> Callable[[itir.Expr], itir.Expr]:
+    def _lift_if_field(self, node: foast.Expr) -> Callable[[itir.Expr], itir.Expr]:
         assert can_be_value_or_iterator(node.type)
         if resulting_type_kind(node.type) is TypeKind.SCALAR:
             return lambda x: x
@@ -264,7 +268,7 @@ class FieldOperatorLowering(NodeTranslator):
             **kwargs,
         )
 
-    def visit_Call(self, node: foast.Call, **kwargs) -> itir.FunCall:
+    def visit_Call(self, node: foast.Call, **kwargs) -> itir.FunCall | itir.Literal:
         if type_info.type_class(node.func.type) is ct.FieldType:
             return self._visit_shift(node, **kwargs)
         elif node.func.id in FUN_BUILTIN_NAMES:

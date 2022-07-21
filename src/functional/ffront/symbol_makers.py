@@ -137,7 +137,7 @@ def make_symbol_type_from_typing(
 
             try:
                 arg_types, return_type = args
-                args = [recursive_make_symbol(arg) for arg in arg_types]
+                func_args = [recursive_make_symbol(arg) for arg in arg_types]
             except Exception as error:
                 raise TypingError(f"Invalid callable annotations in {type_hint}") from error
 
@@ -151,7 +151,7 @@ def make_symbol_type_from_typing(
 
             # TODO(tehrengruber): print better error when no return type annotation is given
             return ct.FunctionType(
-                args=args, kwargs=kwargs, returns=recursive_make_symbol(return_type)
+                args=func_args, kwargs=kwargs, returns=recursive_make_symbol(return_type)
             )
 
     raise TypingError(f"'{type_hint}' type is not supported")

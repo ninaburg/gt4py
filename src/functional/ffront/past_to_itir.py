@@ -186,7 +186,7 @@ class ProgramLowering(traits.VisitorWithSymbolTableTrait, NodeTranslator):
                 )
 
         elif isinstance(node, past.Name):
-            assert isinstance(node.type, past.FieldSymbol)
+            #assert isinstance(node.type, past.FieldSymbol)
             out_field_name = node
             domain_args = [
                 itir.FunCall(
