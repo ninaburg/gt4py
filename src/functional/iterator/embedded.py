@@ -48,7 +48,7 @@ FieldAxis: TypeAlias = (
 TupleAxis: TypeAlias = NoneType
 Axis: TypeAlias = FieldAxis | TupleAxis
 
-Column: TypeAlias = npt.NDArray  # TODO consider replacing by a wrapper around ndarray
+Column: TypeAlias = np.ndarray  # TODO consider replacing by a wrapper around ndarray
 
 
 class SparseTag(Tag):
@@ -138,7 +138,7 @@ class MutableLocatedField(LocatedField, Protocol):
         ...
 
     @abstractmethod
-    def __array__(self) -> npt.NDArray:
+    def __array__(self) -> np.ndarray:
         ...
 
 
@@ -354,7 +354,7 @@ def execute_shift(
             if p is None:
                 new_entry[i] = index
                 break
-        return pos | {tag: new_entry}
+        return pos | {tag: new_entry}  # type: ignore [dict-item] # mypy is confused
 
     assert tag in offset_provider
     offset_implementation = offset_provider[tag]
@@ -625,7 +625,7 @@ class LocatedFieldImpl(MutableLocatedField):
     def __setitem__(self, indices: FieldIndexOrIndices, value: Any):
         self.setter(indices, value)
 
-    def __array__(self) -> npt.NDArray:
+    def __array__(self) -> np.ndarray:
         return self.array()
 
     @property
@@ -653,7 +653,7 @@ def get_ordered_indices(
             res.append(slice(None))
         else:
             assert _is_field_axis(axis)
-            assert isinstance(axis.value, Tag) and axis.value in pos
+            assert axis.value in pos
             elem = pos[axis.value]
             if isinstance(elem, list):
                 res.append(elem.pop(0))  # we consume a sparse entry, this smells...
@@ -690,8 +690,8 @@ def _tupsum(a, b):
 
 def np_as_located_field(
     *axes: Dimension, origin: Optional[dict[Dimension, int]] = None
-) -> Callable[[npt.NDArray], LocatedFieldImpl]:
-    def _maker(a: npt.NDArray) -> LocatedFieldImpl:
+) -> Callable[[np.ndarray], LocatedFieldImpl]:
+    def _maker(a: np.ndarray) -> LocatedFieldImpl:
         if a.ndim != len(axes):
             raise TypeError("ndarray.ndim incompatible with number of given axes")
 
@@ -718,11 +718,8 @@ class IndexField(LocatedField):
         self.dtype = np.dtype(dtype).type
 
     def __getitem__(self, index: FieldIndexOrIndices) -> Any:
-        if isinstance(index, int):
-            return self.dtype(index)
-        else:
-            assert isinstance(index, tuple) and len(index) == 1 and isinstance(index[0], int)
-            return self.dtype(index[0])
+        assert isinstance(index, int) or (isinstance(index, tuple) and len(index) == 1)
+        return self.dtype(index if isinstance(index, int) else index[0])
 
     @property
     def axes(self) -> tuple[Dimension]:
@@ -890,18 +887,11 @@ _column_range: Optional[
 ] = None  # TODO this is a bit ugly, alternative: pass scan range via iterator
 
 
-def _ensure_dtype_matches(val: numbers.Number | tuple[numbers.Number, ...], expected_dtype: type):
-    if isinstance(val, tuple):
-        assert all(isinstance(el, expected_dtype) for el in val)
-    else:
-        assert isinstance(val, expected_dtype)
-
-
-def _column_dtype_and_shape(levels: int, elem: Any) -> tuple[type, int | tuple[int, int]]:
+def _column_dtype(elem: Any) -> np.dtype:
     if isinstance(elem, tuple):
-        return type(elem[0]), (levels, len(elem))
+        return np.dtype([(f"f{i}", _column_dtype(e)) for i, e in enumerate(elem)])
     else:
-        return type(elem), levels
+        return np.dtype(type(elem))
 
 
 @builtins.scan.register(EMBEDDED)
@@ -909,21 +899,16 @@ def scan(scan_pass, is_forward: bool, init):
     def impl(*iters: ItIterator):
         if _column_range is None:
             raise RuntimeError("Column range is not defined, cannot scan.")
-        if isinstance(init, tuple):
-            if any(isinstance(el, tuple) for el in init):
-                raise NotImplementedError("Nested tuples not supported.")
 
         levels = len(_column_range)
         column_range = _column_range if is_forward else reversed(_column_range)
 
-        dtype, shape = _column_dtype_and_shape(levels, init)
+        dtype = _column_dtype(init)
 
         state = init
-        col: npt.NDArray = np.zeros(shape, dtype=dtype)
+        col = np.zeros(levels, dtype=dtype)
         for i in column_range:
             state = scan_pass(state, *map(shifted_scan_arg(i), iters))
-            if __debug__:
-                _ensure_dtype_matches(state, dtype)
             col[i] = state
 
         return col
